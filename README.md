@@ -2,30 +2,29 @@
 
 English interface and source files for the automated Ubbelohde viscometer developed by OUC-China.
 
-## Packages
+## Source and Downloads
 
-| Package | Contents |
-| --- | --- |
-| `hmi-en.zip` | Editable serial-display project, compiled screen file, background and font resources, background-generation script, and simulator preview. |
-| `firmware-en.zip` | STM32 application source, peripheral drivers, CubeMX configuration, startup code, linker script, and build tools. |
-| `web-en.zip` | Browser-based monitoring interface, telemetry receiver, launch script, dependency list, and calibration-check script. |
-
-Extract the packages into the same directory to retain the links between the display project, firmware, and documentation.
+| Module | Browse files | Download package |
+| --- | --- | --- |
+| Serial display | [Display project and resources](display/) | [hmi-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/hmi-en.zip) |
+| Controller firmware | [STM32 source and build files](firmware/) | [firmware-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/firmware-en.zip) |
+| Monitoring interface | [English web interface and receiver](web/) | [web-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/web-en.zip) |
 
 ```text
-viscometer/
+ouc-china-viscometer/
   README.md
-  attachments/
-    hmi-en/
-    firmware-en/
-    web-en/
-  images/
-    hmi-en-preview.png
+  display/       Serial-display project, compiled screen, fonts, and preview
+  firmware/      STM32 application, peripheral drivers, and build configuration
+  web/           Browser interface, telemetry receiver, and calculation checks
 ```
+
+Each module includes its own file guide and usage instructions. The downloadable packages retain their packaged directory layout; extract the three packages into the same directory to preserve their cross-links.
 
 ## Serial Display
 
 The 240 x 320 portrait interface displays temperature, measurement stage, elapsed time, upper and lower liquid-level states, pump/valve status, and temperature-probe status. The package contains an editable `.HMI` project and a compiled `.tft` screen file.
+
+![Serial-display simulator preview](display/hmi-en-preview.png)
 
 ## Controller Firmware
 
