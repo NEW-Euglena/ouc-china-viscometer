@@ -6,11 +6,11 @@ English interface and source files for the automated Ubbelohde viscometer develo
 
 [Download the current source as a ZIP](https://github.com/NEW-Euglena/ouc-china-viscometer/archive/refs/heads/main.zip).
 
-| Module | Browse files | v1.0.0 package |
+| Module | Browse files | v1.1.0 package |
 | --- | --- | --- |
-| Serial display | [Display project and resources](display/) | [hmi-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/hmi-en.zip) |
-| Controller firmware | [STM32 source and build files](firmware/) | [firmware-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/firmware-en.zip) |
-| Monitoring interface | [English web interface and receiver](web/) | [web-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.0.0/web-en.zip) |
+| Serial display | [Display project and resources](display/) | [hmi-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.1.0/hmi-en.zip) |
+| Controller firmware | [STM32 source and build files](firmware/) | [firmware-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.1.0/firmware-en.zip) |
+| Monitoring interface | [English web interface and receiver](web/) | [web-en.zip](https://github.com/NEW-Euglena/ouc-china-viscometer/releases/download/v1.1.0/web-en.zip) |
 
 ```text
 ouc-china-viscometer/
@@ -20,7 +20,7 @@ ouc-china-viscometer/
   web/           Browser interface, telemetry receiver, and calculation checks
 ```
 
-Each module includes its own file guide and usage instructions. The downloadable packages retain their packaged directory layout; extract the three packages into the same directory to preserve their cross-links.
+Each module includes its own file guide and usage instructions. Extract the three module ZIP files into the same directory to preserve the documentation links between modules.
 
 ## Serial Display
 
