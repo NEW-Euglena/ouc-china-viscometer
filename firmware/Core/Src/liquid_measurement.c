@@ -59,6 +59,9 @@ static void Accept(LiquidMeasurement *m, unsigned input, uint32_t time) {
   LiquidLevel *level = &m->levels[input];
   level->stable = level->raw;
   if (!LiquidMeasurement_IsActive(m)) return;
+  /* 吸液及续吸只由上探头判定。停泵前的下探头边沿可以延后消抖确认。 */
+  if (input == LIQUID_LOWER && (m->pump ||
+      (m->stage == LIQUID_WAIT_UPPER && (int32_t)(time - m->phase_time) < 0))) return;
   if ((int32_t)(time - m->phase_time) < 0) {
     Fail(m, LIQUID_ERROR_ORDER); return;
   }
@@ -67,7 +70,6 @@ static void Accept(LiquidMeasurement *m, unsigned input, uint32_t time) {
   if (!LiquidMeasurement_IsActive(m)) return;
   if (m->stage == LIQUID_SUCTION) {
     if (input == LIQUID_UPPER && level->stable) {
-      if (!m->levels[LIQUID_LOWER].stable) { Fail(m, LIQUID_ERROR_ORDER); return; }
       m->stage = LIQUID_EXTRA_SUCTION;
       m->phase_time = time;
     } else if (!level->stable) Fail(m, LIQUID_ERROR_ORDER);
@@ -126,8 +128,7 @@ void LiquidMeasurement_Poll(LiquidMeasurement *m, uint32_t now) {
 uint8_t LiquidMeasurement_Start(LiquidMeasurement *m, uint32_t now) {
   if (LiquidMeasurement_IsActive(m)) return 0U;
   if (m->overflow) { Fail(m, LIQUID_ERROR_OVERFLOW); return 0U; }
-  if (m->head != m->tail || m->levels[0].raw != m->levels[0].stable ||
-      m->levels[1].raw != m->levels[1].stable) {
+  if (m->head != m->tail || m->levels[0].raw != m->levels[0].stable) {
     Fail(m, LIQUID_ERROR_UNSTABLE); return 0U;
   }
   if (m->levels[0].stable) { Fail(m, LIQUID_ERROR_UPPER_WET); return 0U; }
@@ -161,4 +162,14 @@ void LiquidMeasurement_Button(LiquidMeasurement *m, uint8_t pressed, uint32_t no
     if (LiquidMeasurement_IsActive(m)) LiquidMeasurement_Abort(m);
     else LiquidMeasurement_Start(m, now);
   }
+}
+
+void LiquidMeasurement_Control(LiquidMeasurement *m, uint8_t pressed,
+                               uint8_t requests, uint32_t now) {
+  const uint8_t was_active = LiquidMeasurement_IsActive(m);
+  const LiquidStage previous_stage = m->stage;
+  LiquidMeasurement_Button(m, pressed, now);
+  if (requests & LIQUID_REQUEST_STOP) LiquidMeasurement_Abort(m);
+  else if ((requests & LIQUID_REQUEST_START) && !was_active && m->stage == previous_stage)
+    LiquidMeasurement_Start(m, now);
 }

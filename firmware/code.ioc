@@ -34,7 +34,8 @@ Mcu.Pin15=PC10
 Mcu.Pin16=PC11
 Mcu.Pin17=PA10
 Mcu.Pin18=PB3
-Mcu.PinsNb=19
+Mcu.Pin19=PC7
+Mcu.PinsNb=20
 Mcu.ThirdPartyNb=0
 Mcu.UserConstants=
 Mcu.UserName=STM32G071RBTx
@@ -217,6 +218,12 @@ VP_SYS_VS_Systick.Mode=SysTick
 VP_SYS_VS_Systick.Signal=SYS_VS_Systick
 board=NUCLEO-G071RB
 boardIOC=true
+
+PC7.GPIOParameters=PinState,GPIO_Label
+PC7.GPIO_Label=C_VENT_VALVE
+PC7.Locked=true
+PC7.PinState=GPIO_PIN_RESET
+PC7.Signal=GPIO_Output
 
 PA10.GPIOParameters=GPIO_Label,GPIO_PuPd,GPIO_ModeDefaultEXTI
 PA10.GPIO_Label=LIQUID_UPPER

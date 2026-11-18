@@ -3,7 +3,7 @@
 ## Features
 
 - Device temperature, measurement stage, pump/valve status, and upper/lower liquid-level indicators.
-- Temperature-history chart and receiver-side record storage.
+- Temperature-history chart with selectable 1-, 10-, 30-, and 60-minute windows and receiver-side record storage.
 - Manual input of sample time, solvent reference time, and concentration.
 - Automatic input from a normally completed device measurement.
 - Relative-viscosity calculation, single-point intrinsic-viscosity estimation, and calibrated molecular-weight estimation.
@@ -47,7 +47,7 @@ Replace `COM5` with the device port. The launch helper also supports:
 ./start-monitor.ps1 -Port COM5
 ```
 
-The receiver uses 115200 baud for USB telemetry. For Wi-Fi reception, use `--host 0.0.0.0` and configure the device with the receiver address.
+The receiver uses 115200 baud for USB telemetry. For Wi-Fi reception, use `--host 0.0.0.0` and [configure the device](../firmware/README.md#wi-fi-telemetry) with the receiver address.
 
 ## Data Interfaces
 
@@ -63,7 +63,7 @@ History is stored in `../logs/telemetry.jsonl`; the `--log` option selects anoth
 
 The calculation uses `K = 0.00025048647658895034` and `alpha = 0.6479793832009052`; the interface displays `K = 2.50486 x 10^-4` and `alpha = 0.647979`.
 
-The two calibration points are `(350000 Da, 0.98 dL/g)` and `(3020000 Da, 3.96 dL/g)`.
+The two calibration points are `(350000 Da, 0.98 dL/g)` and `(3020000 Da, 3.96 dL/g)`. For the held-out ΔamyR sample, [η] was 3.553 ± 0.15 dL/g and the GPC result was (2.60 ± 0.02) × 10⁶ Da. The model estimate at the measured central viscosity was 2,554,580 Da, a 1.75% deviation from the GPC central value for this sample.
 
 | Quantity | Unit |
 | --- | --- |

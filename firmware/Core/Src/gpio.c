@@ -50,8 +50,9 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /* 将真空泵和电磁阀控制输出预置为低电平。 */
+  /* 三路执行器先保持断电，诊断和下载模式不进入业务待机状态。 */
   HAL_GPIO_WritePin(GPIOA, PUMP_PWM2_Pin | VALVE_CONTROL_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(C_VENT_VALVE_GPIO_Port, C_VENT_VALVE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -65,6 +66,10 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* D9/PC7 控制 C 管泄压阀，低电平通气，高电平封住排气口。 */
+  GPIO_InitStruct.Pin = C_VENT_VALVE_Pin;
+  HAL_GPIO_Init(C_VENT_VALVE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(TEMP_DATA_GPIO_Port, TEMP_DATA_Pin, GPIO_PIN_SET);
@@ -101,5 +106,18 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+
+void PumpValve_SetRunning(uint8_t running)
+{
+  if (running != 0U) {
+    /* 抽气前先关闭 C 管通气路径。 */
+    HAL_GPIO_WritePin(C_VENT_VALVE_GPIO_Port, C_VENT_VALVE_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOA, PUMP_PWM2_Pin | VALVE_CONTROL_Pin, GPIO_PIN_SET);
+  } else {
+    /* 先停泵并切回 B 管，再打开 C 管通气路径。 */
+    HAL_GPIO_WritePin(GPIOA, PUMP_PWM2_Pin | VALVE_CONTROL_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(C_VENT_VALVE_GPIO_Port, C_VENT_VALVE_Pin, GPIO_PIN_RESET);
+  }
+}
 
 /* USER CODE END 2 */

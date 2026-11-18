@@ -6,8 +6,9 @@ const close=(a,b,t=1e-8)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 close(viscosity(120,100,.5).intrinsic,.376068538498453750015375731669811,1e-12);
 close(mass(.98).value,350000);
 close(mass(3.96).value,3020000);
-close(mass(2.63).value,1605864.733273972);
-close(Math.abs(mass(2.63).value-1600000)/1600000*100,.36654582962324,1e-9);
+const heldOutPrediction = mass(3.553).value;
+close(heldOutPrediction, 2554579.827612141);
+close(Math.abs(heldOutPrediction - 2600000) / 2600000 * 100, 1.7469297072253407, 1e-9);
 for(const x of [0,-1,NaN,Infinity]) {
   assert.ok(viscosity(x,100,.5).error);
   assert.ok(viscosity(120,x,.5).error);

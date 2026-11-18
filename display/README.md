@@ -10,10 +10,11 @@ The project targets the TJC3224T124_011C_A01 serial display: 2.4-inch, 240 x 320
 - [status_ui_en.tft](status_ui_en.tft): compiled screen file.
 - [assets/background.png](assets/background.png): English interface background.
 - [assets/english16.zi](assets/english16.zi): 16-pixel Arial ASCII status font.
+- [assets/english24.zi](assets/english24.zi): 24-pixel ASCII font for the START/STOP button.
 - `assets/digits40.zi`, `assets/status24.zi`, and `assets/status24v2.zi`: additional font resources.
 - [create_background.py](create_background.py): background-generation script using Python, Pillow, and Windows Arial fonts.
 - [hmi_screen.c](../firmware/Core/Src/hmi_screen.c): matching STM32 display driver.
-- [Simulator preview](hmi-en-preview.png): interface preview with default placeholders.
+- [Touchscreen preview](hmi-en-preview.png): interface preview with default placeholders.
 
 ## Display Components
 
@@ -24,14 +25,15 @@ The project targets the TJC3224T124_011C_A01 serial display: 2.4-inch, 240 x 320
 | `tStage` | Idle, Suction, Extra suction, Draining, Timing, Complete, Aborted, Fault, or a specific fault status. |
 | `tUpper` | Wet/Dry and Pending/Started. |
 | `tLower` | Wet/Dry and Pending/Finished. |
-| `tRun` | Pump/valve On/Off. |
+| `tRun` | Suction pump and B-tube valve On/Off. |
+| `bAction` | START when idle, STOP during a run. |
 | `tSensor` | Temperature OK, No probe, Data error, Waiting, or Stale data. |
 
 ## Project and Driver
 
 Open `status_ui_en.HMI` in the compatible USART HMI editor to inspect the interface, component layout, and embedded resources. The English `.tft` and matching STM32 driver provide the static labels and dynamic status text.
 
-The driver retains the component names, page identifier, acknowledgement responses, and `0xFF 0xFF 0xFF` command terminator. Stage and status components use font ID 5. Temperature and time retain numeric font IDs 2 and 3; font IDs 0, 1, and 4 remain in the project.
+The driver retains the component names, page identifier, acknowledgement responses, and `0xFF 0xFF 0xFF` command terminator. The touchscreen sends `A5 5A action sequence FF FF FF` when released. The action is captured at press time (1 for START, 2 for STOP). The firmware ignores duplicate sequence numbers. Temperature and time retain numeric font IDs 2 and 3; font IDs 0, 1, and 4 remain in the project.
 
 The background-generation script is available as:
 

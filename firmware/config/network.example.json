@@ -1,0 +1,6 @@
+{
+  "wifi_ssid": "你的2.4GHz Wi-Fi名称",
+  "wifi_password": "你的Wi-Fi密码，开放网络留空",
+  "server_ip": "192.168.1.100",
+  "server_port": 8080
+}

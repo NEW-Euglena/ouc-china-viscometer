@@ -12,6 +12,8 @@ void HMI_Screen_SetLiquidStatus(uint8_t upper_wet, uint8_t lower_wet,
                                 uint8_t upper_triggered, uint8_t lower_triggered);
 void HMI_Screen_SetMeasurement(LiquidStage stage, LiquidError error,
                                uint8_t result_valid, uint32_t result_ms);
+/* 在主循环临界区读取并清空 LIQUID_REQUEST_* 位标记。 */
+uint8_t HMI_Screen_TakeRequests(void);
 /* 仅从主循环调用；返回 1 表示已开始发送，不代表屏幕已执行成功。 */
 uint8_t HMI_Screen_SendCommand(const char *command);
 void HMI_Screen_RxCpltCallback(void);

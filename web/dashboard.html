@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Efflux Timing & Temperature | Device Monitor</title>
+  <title>Efflux Timing &amp; Temperature | Device Monitor</title>
   <link rel="icon" href="data:,">
   <style>
     :root{color-scheme:light;--ink:#183247;--muted:#637786;--line:#e1e9ed;--accent:#087f76;--surface:#fff}
@@ -71,8 +71,11 @@
     .level-values{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
     .liquid-state{display:inline-flex;align-items:center;gap:7px;font-weight:600}.liquid-state::before{content:"";width:7px;height:7px;border-radius:50%;background:#9caab4}
     .liquid-state[data-wet="true"]{color:#25694d}.liquid-state[data-wet="true"]::before{background:#259a70}
-    .chart-card{padding:24px;margin-top:24px}.chart-window,#chart-status{font-size:12px;color:var(--muted);font-weight:400}
-    .chart-window{margin-left:10px}.chart-wrap{position:relative;height:260px;margin-top:20px}
+    .chart-card{padding:24px;margin-top:24px}#chart-status,.chart-range{font-size:12px;color:var(--muted)}
+    .chart-card .card-heading{flex-wrap:wrap;gap:8px 16px}
+    .chart-range{display:flex;align-items:center;gap:8px}
+    .chart-range select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+    .chart-wrap{position:relative;height:260px;margin-top:20px}
     #temperature-chart{width:100%;height:100%;display:block}#chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);margin:0;pointer-events:none}
     #chart-tooltip{position:absolute;pointer-events:none;padding:7px 10px;background:#183247;color:white;border-radius:8px;font-size:12px;white-space:nowrap;max-width:95%}
     #chart-tooltip[hidden]{display:none}.chart-note{font-size:12px;color:var(--muted);margin:8px 0 0}
@@ -105,11 +108,11 @@
   <header>
     <div><h1>Efflux Timing & Temperature</h1><p class="subtitle">Track the timing marks, efflux time and temperature.</p></div>
     <div class="connection">
-      <p id="status" data-state="waiting" role="status" aria-live="polite">Waiting for device data</p>
+      <p id="status" data-state="waiting" role="status" aria-live="polite">Waiting for data</p>
       <span id="freshness">Updates automatically when data arrives</span>
     </div>
   </header>
-  <section class="cards" aria-label="Live monitoring">
+  <section class="cards" aria-label="Live monitoring data">
     <article class="temperature-card">
       <div class="card-heading"><h2>Temperature</h2><span class="icon-tile" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 14.5V5a3 3 0 0 1 6 0v9.5a5 5 0 1 1-6 0Z"/><path d="M12 8v9"/><circle cx="12" cy="18" r="1.5"/></svg></span></div>
       <div>
@@ -122,9 +125,35 @@
       <div class="card-heading"><h2>Current Measurement</h2><span id="stage" class="stage" data-state="waiting">Waiting for data</span></div>
       <div class="measurement-reading"><span id="measurement-time">—</span><span class="unit">s</span></div>
       <p id="measurement-note">Upper mark starts · Lower mark stops</p>
-      <div class="run-row"><span>Suction pump / valves</span><span id="run" class="run-state" data-enabled="false">—</span><span class="expired-note">Stale</span></div>
+      <div class="run-row"><span>Suction pump / B-tube valve</span><span id="run" class="run-state" data-enabled="false">—</span><span class="expired-note">Stale</span></div>
     </article>
   </section>
+  <section class="level-cards" aria-label="Timing mark status">
+    <article class="level-card"><div><h2>Upper Timing Mark</h2><p>Timing starts when the liquid surface falls past this mark.</p></div><div class="level-values"><span id="upper-liquid" class="liquid-state" data-wet="unknown">—</span><span id="upper-trigger">Waiting for data</span><span class="expired-note">Stale</span></div></article>
+    <article class="level-card"><div><h2>Lower Timing Mark</h2><p>Timing stops when the liquid surface falls past this mark.</p></div><div class="level-values"><span id="lower-liquid" class="liquid-state" data-wet="unknown">—</span><span id="lower-trigger">Waiting for data</span><span class="expired-note">Stale</span></div></article>
+  </section>
+  <article class="chart-card">
+    <div class="card-heading">
+      <h2>Temperature History</h2>
+      <label class="chart-range" for="history-range">Time range
+        <select id="history-range">
+          <option value="1">Last 1 minute</option>
+          <option value="10">Last 10 minutes</option>
+          <option value="30">Last 30 minutes</option>
+          <option value="60" selected>Last 60 minutes</option>
+        </select>
+      </label>
+    </div>
+    <p id="chart-status">Waiting for temperature records</p>
+    <div class="chart-wrap"><canvas id="temperature-chart" role="img" aria-label="Temperature over the last hour"></canvas><p id="chart-empty">The chart appears when temperature data arrives</p><div id="chart-tooltip" hidden></div></div>
+    <p class="chart-note" id="chart-note">The chart shows received readings, with gaps for missing data or sensor errors.</p>
+  </article>
+  <p class="equipment-note"><span>Pump and valve indicators show control states. The liquid-level inputs cannot detect disconnected sensors.</span></p>
+  <dl class="details" aria-label="Device information">
+    <div><dt>Device ID</dt><dd id="device">—</dd></div>
+    <div><dt>Last Received</dt><dd id="received">—</dd></div>
+    <div><dt>Device Uptime</dt><dd id="uptime">—</dd></div>
+  </dl>
   <article id="viscosity-calculator" class="viscosity-card" aria-label="Single-point viscosity calculator">
     <div class="card-heading"><h2>Viscosity & Molecular Weight</h2></div>
     <p class="formula-note">Efflux time → single-point intrinsic viscosity → molecular weight estimate. Use the same sample preparation, solvent and temperature conditions as the project calibration measurements. No automatic temperature compensation is applied.</p>
@@ -136,10 +165,10 @@
     </div>
     <div class="viscosity-results">
       <div><h2>Relative Viscosity ηᵣ</h2><output id="relative-viscosity" class="viscosity-value">—</output><small>Dimensionless · Time-ratio approximation</small></div>
-      <div><h2>Intrinsic Viscosity [η]</h2><output id="intrinsic-viscosity" class="viscosity-value">—</output><small>dL/g · Solomon–Ciutǎ single-point estimate</small></div>
-      <div><h2>Molecular Weight Estimate</h2><output id="molecular-weight" class="viscosity-value">—</output><small>Da · Project calibration</small><p id="molecular-weight-note" class="formula-note">Waiting for valid intrinsic viscosity</p></div>
+      <div><h2>Intrinsic Viscosity [η]</h2><output id="intrinsic-viscosity" class="viscosity-value">—</output><small>dL/g · Solomon–Ciuta single-point estimate</small></div>
+      <div><h2>Molecular Weight Estimate M<sub>w</sub></h2><output id="molecular-weight" class="viscosity-value">—</output><small>Da · Project calibration</small><p id="molecular-weight-note" class="formula-note">Waiting for valid intrinsic viscosity</p></div>
     </div>
-    <p class="formula-note">[η] = K × M<sup>α</sup>; M = ([η]/K)<sup>1/α</sup>. K = 2.50486 × 10<sup>−4</sup>; α = 0.647979 ([η] in dL/g; M in Da). Full-precision parameters are used in calculations. Two original samples (350,000 and 3,020,000 Da) define the calibration span, not a validated range. One independent test sample ([η] = 2.63 dL/g; measured M = 1,600,000 Da) has a prediction error of 0.37%. This is a single-sample result. The calculation route is informed by <a href="https://doi.org/10.1002/bip.360210812" target="_blank" rel="noopener noreferrer">Kato et al., 1982</a>.</p>
+    <p class="formula-note">[η] = K × M<sub>w</sub><sup>α</sup>. K ≈ 2.50486 × 10<sup>−4</sup> and α ≈ 0.647979 ([η] in dL/g, M<sub>w</sub> in Da). The two calibration samples span 350,000–3,020,000 Da. For the held-out ΔamyR sample ([η] = 3.553 ± 0.15 dL/g), the project model estimated 2,554,580 Da, a 1.75% deviation from the GPC central value of (2.60 ± 0.02) × 10<sup>6</sup> Da.</p>
     <p id="viscosity-note" role="status" aria-live="polite">Enter all three values, then select Calculate</p>
     <details><summary>Equations & Conditions</summary>
       <div class="formulas">
@@ -151,22 +180,7 @@
       <p class="formula-note">Inputs are used only on this page and are not saved; re-enter them after reloading.<a href="https://www.rheosense.com/hubfs/Application_Notes/VROC_initium/PCL_initium1%2B_intrinsic_single_point.pdf?hsLang=en" target="_blank" rel="noopener noreferrer">Single-point equation reference</a></p>
     </details>
   </article>
-  <section class="level-cards" aria-label="Timing mark status">
-    <article class="level-card"><div><h2>Upper Timing Mark</h2><p>Timing starts when the liquid surface falls past this mark.</p></div><div class="level-values"><span id="upper-liquid" class="liquid-state" data-wet="unknown">—</span><span id="upper-trigger">Waiting for data</span><span class="expired-note">Stale</span></div></article>
-    <article class="level-card"><div><h2>Lower Timing Mark</h2><p>Timing stops when the liquid surface falls past this mark.</p></div><div class="level-values"><span id="lower-liquid" class="liquid-state" data-wet="unknown">—</span><span id="lower-trigger">Waiting for data</span><span class="expired-note">Stale</span></div></article>
-  </section>
-  <article class="chart-card">
-    <div class="card-heading"><h2>Temperature History <span class="chart-window">Last hour</span></h2><span id="chart-status">Waiting for temperature records</span></div>
-    <div class="chart-wrap"><canvas id="temperature-chart" role="img" aria-label="Temperature over the last hour"></canvas><p id="chart-empty">The chart appears when temperature data arrives</p><div id="chart-tooltip" hidden></div></div>
-    <p class="chart-note">Only received records are shown; reception gaps and probe errors break the line.</p>
-  </article>
-  <p class="equipment-note"><span>Pump and valve indicators show control outputs. Liquid-level inputs do not detect disconnected wiring.</span></p>
-  <dl class="details" aria-label="Device information">
-    <div><dt>Device ID</dt><dd id="device">—</dd></div>
-    <div><dt>Last Received</dt><dd id="received">—</dd></div>
-    <div><dt>Device Uptime</dt><dd id="uptime">—</dd></div>
-  </dl>
-  <footer><p>Read-only monitor · Press B1 to start a run; press again during a run to abort.</p><p>Refreshes every 2 seconds</p></footer>
+  <footer><p>Read-only monitoring · Use the touchscreen or B1 to start or stop a run</p><p>Updates every 2 seconds</p></footer>
 </main>
 <script>
 const element = id => document.getElementById(id);
@@ -276,14 +290,11 @@ function renderMeasurement(measurement) {
   }
 }
 function renderSnapshot(snapshot) {
-  const usb = snapshot.source === 'usb';
-  element('connection-label').textContent = usb ? 'USB Device Monitor' : 'Network Device Monitor';
-  element('sampling-note').textContent = 'DS18B20 temperature sensor · ' + (usb ? 'USB reception about every second' : 'Uploads about every 5 seconds');
   const data = snapshot.data;
   currentDevice = data?.device_id || null;
   panel.dataset.expired = String(Boolean(data && snapshot.stale));
   if (!data) {
-    element('status').textContent = usb ? 'Waiting for USB data' : 'Waiting for device data';element('status').dataset.state = 'waiting';
+    element('status').textContent = 'Waiting for data';element('status').dataset.state = 'waiting';
     element('freshness').textContent = 'Updates automatically when data arrives';
     for (const id of ['temperature','run','device','received','uptime']) element(id).textContent = '—';
     element('run').dataset.enabled = 'false';
@@ -291,11 +302,12 @@ function renderSnapshot(snapshot) {
     renderMeasurement(null);return;
   }
   const fault = data.sensor_status !== 'ok' || data.measurement?.stage === 'fault';
-  element('status').textContent = snapshot.stale ? 'Stale data · No data for over 15 seconds: ' + (usb ? 'reception' : 'upload') : fault ? 'Receiving data · Device fault' : 'Receiving device data';
+  element('status').textContent = snapshot.stale ? 'Stale data · No updates for over 15 seconds' : fault ? 'Receiving data · Device fault' : 'Receiving data';
   element('status').dataset.state = snapshot.stale ? 'stale' : fault ? 'fault' : 'online';
-  element('freshness').textContent = 'Last received about ' + Math.max(0, Math.floor(snapshot.age_seconds || 0)) + ' s';
+  element('freshness').textContent = 'Last received about ' + Math.max(0, Math.floor(snapshot.age_seconds || 0)) + ' s ago';
   element('temperature').textContent = data.temperature_centi === null ? '—' : (data.temperature_centi / 100).toFixed(2);
-  element('sensor').textContent = {ok:'Sensor OK',not_found:'Sensor not found',crc_error:'Sensor CRC error'}[data.sensor_status];
+  element('sensor').textContent =
+    {ok:'Sensor OK',not_found:'Sensor not found',crc_error:'Sensor CRC error'}[data.sensor_status];
   element('sensor').dataset.state = data.sensor_status;
   element('run').textContent = data.pump_enabled === data.valve_enabled ? (data.pump_enabled ? 'On' : 'Off') : 'Pump / valve mismatch';
   element('run').dataset.enabled = String(data.pump_enabled && data.valve_enabled);
@@ -304,23 +316,29 @@ function renderSnapshot(snapshot) {
   element('received').textContent = new Date(data.received_at).toLocaleString('en-GB');
   element('uptime').textContent = formatUptime(data.uptime_ms);
 }
-let historyPoints = [], chartPoints = [], chartBounds;
+const historyRange = element('history-range');
+let historyPoints = [], chartPoints = [], chartBounds, historyUnavailable = false;
 function drawHistory() {
   const canvas = element('temperature-chart'), ctx = canvas.getContext('2d');
   const width = canvas.clientWidth, height = canvas.clientHeight, ratio = window.devicePixelRatio || 1;
   canvas.width = Math.round(width * ratio);canvas.height = Math.round(height * ratio);ctx.scale(ratio,ratio);
   const device = currentDevice || historyPoints.at(-1)?.device_id;
-  chartPoints = historyPoints.filter(p => p.device_id === device).map(p => ({...p,time:Date.parse(p.received_at)})).sort((a,b) => a.time-b.time);
+  const minutes = Number(historyRange.value);
+  const last = Date.now(), first = last - minutes * 60000;
+  chartPoints = historyPoints.filter(p => p.device_id === device).map(p => ({...p,time:Date.parse(p.received_at)}))
+    .filter(p => p.time >= first && p.time <= last).sort((a,b) => a.time-b.time);
   const valid = chartPoints.filter(p => p.temperature_centi !== null);
+  const count = chartPoints.length;
+  element('chart-status').textContent = historyUnavailable ? 'Temperature history is temporarily unavailable' :
+    count ? count + (count === 1 ? ' reading received' : ' readings received') : 'No readings in this time range';
   element('chart-empty').style.display = valid.length ? 'none' : 'flex';
-  element('chart-empty').textContent = chartPoints.length ? 'No valid temperatures in the current records' : 'The chart appears when temperature data arrives';
-  canvas.setAttribute('aria-label', `Temperature over the last hour; ${valid.length} valid samples`);
+  element('chart-empty').textContent = count ? 'No valid temperatures in the current records' : 'No temperature readings in this time range';
+  canvas.setAttribute('aria-label', `Temperature over the last ${minutes} min, ${valid.length} valid samples`);
   element('chart-tooltip').hidden = true;
   if (!valid.length) {chartBounds = null;return;}
   const temperatures = valid.map(p => p.temperature_centi / 100);
   const padding = Math.max(.5,(Math.max(...temperatures)-Math.min(...temperatures))*.15);
   const low = Math.min(...temperatures)-padding, high = Math.max(...temperatures)+padding;
-  const last = Math.max(Date.now(),chartPoints.at(-1).time), first = last-3600000;
   const left=48,right=width-14,top=12,bottom=height-30;
   const x = t => left+(t-first)/(last-first)*(right-left), y = v => bottom-(v-low)/(high-low)*(bottom-top);
   chartBounds = {left,right,first,last};
@@ -329,8 +347,13 @@ function drawHistory() {
     const value=low+(high-low)*i/4, py=y(value);
     ctx.strokeStyle='#e1e9ed';ctx.beginPath();ctx.moveTo(left,py);ctx.lineTo(right,py);ctx.stroke();
     ctx.fillStyle='#637786';ctx.textAlign='right';ctx.fillText(value.toFixed(1),left-8,py+4);
-    const time=first+(last-first)*i/4;
-    ctx.textAlign=i===0?'left':i===4?'right':'center';ctx.fillText(new Date(time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),x(time),height-8);
+  }
+  const ticks = width < 360 ? 2 : 4;
+  const timeFormat = {hour:'2-digit', minute:'2-digit', ...(minutes === 1 ? {second:'2-digit'} : {})};
+  for(let i=0;i<=ticks;i++) {
+    const time=first+(last-first)*i/ticks;
+    ctx.textAlign=i===0?'left':i===ticks?'right':'center';
+    ctx.fillText(new Date(time).toLocaleTimeString('en-GB',timeFormat),x(time),height-8);
   }
   ctx.save();ctx.beginPath();ctx.rect(left,top,right-left,bottom-top);ctx.clip();
   ctx.strokeStyle='#087f76';ctx.lineWidth=2;ctx.beginPath();let previous=null;
@@ -357,30 +380,27 @@ element('temperature-chart').addEventListener('pointermove', event => {
 });
 element('temperature-chart').addEventListener('pointerleave', () => {element('chart-tooltip').hidden=true;});
 new ResizeObserver(drawHistory).observe(element('temperature-chart'));
+historyRange.addEventListener('change', drawHistory);
 
 async function refresh() {
-  // 直接打开附件时仅运行离线计算，不请求实时数据接口。
-  if (location.protocol === 'file:') {
-    element('status').textContent = 'Offline calculator';
-    element('freshness').textContent = 'Start the receiver service for live monitoring';
-    return;
-  }
   try {
     const response = await fetch('/api/latest', {cache:'no-store',signal:AbortSignal.timeout(4000)});
-    if (!response.ok) throw new Error('Receiver service error');
+    if (!response.ok) throw new Error('Data service unavailable');
     renderSnapshot(await response.json());
     try {
       const history = await fetch('/api/history',{cache:'no-store',signal:AbortSignal.timeout(4000)});
-      if(!history.ok)throw new Error('History request failed');
+      if(!history.ok)throw new Error('Could not request temperature history');
       historyPoints=(await history.json()).points;
-      drawHistory();element('chart-status').textContent=historyPoints.length?'Received '+historyPoints.length+' records':'Waiting for temperature records';
+      historyUnavailable = false;
+      drawHistory();
     } catch {
-      element('chart-status').textContent='Chart temporarily unavailable';
+      historyUnavailable = true;
+      element('chart-status').textContent='Temperature history is temporarily unavailable';
     }
   } catch (error) {
-    element('status').textContent = 'Cannot connect to receiver service';
+    element('status').textContent = 'Unable to reach the data service';
     element('status').dataset.state = 'error';
-    element('freshness').textContent = 'Displayed data may be stale. Reconnecting…';
+    element('freshness').textContent = 'Displayed readings may be stale. Reconnecting…';
     panel.dataset.expired = String(element('device').textContent !== '—');
     renderViscosity();
   }

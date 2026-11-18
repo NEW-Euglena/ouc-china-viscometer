@@ -4,10 +4,12 @@
 #include <stdint.h>
 
 #define LIQUID_DEBOUNCE_MS 5U
-#define LIQUID_EXTRA_SUCTION_MS 300U
+#define LIQUID_EXTRA_SUCTION_MS 600U
 #define LIQUID_SUCTION_TIMEOUT_MS 30000U
 #define LIQUID_DRAIN_TIMEOUT_MS 120000U
 #define LIQUID_EDGE_CAPACITY 32U
+#define LIQUID_REQUEST_START 1U
+#define LIQUID_REQUEST_STOP 2U
 
 typedef enum {
   LIQUID_IDLE, LIQUID_SUCTION, LIQUID_EXTRA_SUCTION, LIQUID_WAIT_UPPER,
@@ -48,6 +50,9 @@ uint8_t LiquidMeasurement_Start(LiquidMeasurement *measurement, uint32_t now);
 void LiquidMeasurement_Abort(LiquidMeasurement *measurement);
 void LiquidMeasurement_Button(LiquidMeasurement *measurement,
                               uint8_t pressed, uint32_t now);
+/* 合并实体键和触摸请求，同一轮控制处理中止优先。 */
+void LiquidMeasurement_Control(LiquidMeasurement *measurement,
+                               uint8_t pressed, uint8_t requests, uint32_t now);
 uint8_t LiquidMeasurement_IsActive(const LiquidMeasurement *measurement);
 
 #endif

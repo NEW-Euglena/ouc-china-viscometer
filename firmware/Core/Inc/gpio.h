@@ -40,6 +40,9 @@ void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
+/* 按吸液状态统一控制泵、B 管三通阀和 C 管泄压阀。 */
+void PumpValve_SetRunning(uint8_t running);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

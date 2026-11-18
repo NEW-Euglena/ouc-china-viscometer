@@ -16,7 +16,9 @@ static volatile uint8_t reply_received, reply_code, restarted;
 static uint8_t sensor_status, pump_enabled, dirty;
 static int32_t temperature_centi;
 static uint32_t sample_time;
-static uint8_t ui_index, batch_active, ui_initialized, batch_sensor, batch_pump;
+static uint8_t ui_index, batch_active, batch_sensor, batch_pump, batch_running;
+static volatile uint8_t ui_initialized, touch_requests;
+static uint8_t touch_sequence, touch_sequence_valid;
 static char batch_temperature[16];
 static uint8_t measurement_set, result_valid, batch_measurement;
 static LiquidStage measurement_stage;
@@ -32,34 +34,34 @@ volatile uint32_t hmi_ui_updates;
 
 /* 英文显示使用 ASCII 字符，与屏幕 gb2312 编码及原串口协议兼容。 */
 static const char *const sensor_text[] = {
-  "Temperature OK",                 /* 温度正常 */
-  "No probe",         /* 未发现探头 */
-  "Data error", /* 温度数据异常 */
-  "Waiting",                 /* 等待采样 */
-  "Stale data"                  /* 数据过期 */
+  "OK", /* 温度正常 */
+  "NO PROBE", /* 未发现探头 */
+  "DATA ERROR", /* 温度数据异常 */
+  "NO DATA", /* 等待采样 */
+  "STALE DATA" /* 数据过期 */
 };
 
 
 static const char *const measurement_stage_text[] = {
-  "Idle", /* 待机 */
-  "Suction", /* 吸液 */
-  "Extra suction", /* 续吸 */
-  "Draining", /* 放流 */
-  "Timing", /* 计时 */
-  "Complete", /* 完成 */
-  "Aborted", /* 中止 */
-  "Fault", /* 故障 */
+  "READY", /* 待机 */
+  "SUCTION", /* 吸液 */
+  "EXTRA SUCTION", /* 续吸 */
+  "DRAINING", /* 放流 */
+  "TIMING", /* 计时 */
+  "COMPLETE", /* 完成 */
+  "ABORTED", /* 中止 */
+  "FAULT", /* 故障 */
 };
 
 static const char *const measurement_error_text[] = {
-  "Fault", /* 故障 */
-  "Upper mark wet", /* 上方有液 */
-  "Invalid sequence", /* 液位顺序异常 */
-  "Event overflow", /* 液位事件溢出 */
-  "Suction timeout", /* 吸液超时 */
-  "Upper timeout", /* 上方下降超时 */
-  "Lower timeout", /* 下方下降超时 */
-  "Unstable level", /* 液位未稳定 */
+  "FAULT", /* 故障 */
+  "UPPER WET", /* 上方有液 */
+  "INVALID SEQUENCE", /* 液位顺序异常 */
+  "EVENT OVERFLOW", /* 液位事件溢出 */
+  "SUCTION TIMEOUT", /* 吸液超时 */
+  "UPPER TIMEOUT", /* 上方下降超时 */
+  "LOWER TIMEOUT", /* 下方下降超时 */
+  "UNSTABLE LEVEL", /* 液位未稳定 */
 };
 
 static void Debug(const char *message) {
@@ -83,6 +85,7 @@ void HMI_Screen_Init(void) {
   state_time = HAL_GetTick();
   rx_length = rx_end_count = rx_fault = page_received = 0U;
   reply_received = restarted = 0U;
+  touch_requests = touch_sequence_valid = 0U;
   sensor_status = 3U;
   pump_enabled = 0U;
   measurement_set = result_valid = levels_set = 0U;
@@ -126,10 +129,25 @@ void HMI_Screen_SetMeasurement(LiquidStage stage, LiquidError error,
   dirty = 1U;
 }
 
+uint8_t HMI_Screen_TakeRequests(void) {
+  const uint8_t requests = touch_requests;
+  touch_requests = 0U;
+  return requests;
+}
+
 void HMI_Screen_RxCpltCallback(void) {
   if (rx_length < sizeof(rx_frame)) rx_frame[rx_length++] = rx_byte;
   rx_end_count = rx_byte == 0xffU ? (uint8_t)(rx_end_count + 1U) : 0U;
   if (rx_end_count == 3U) {
+    /* 屏幕按下时锁定动作，释放后发送动作及 0～250 序号；重复帧不重复执行。 */
+    if (rx_length == 7U && rx_frame[0] == 0xa5U && rx_frame[1] == 0x5aU &&
+        (rx_frame[2] == LIQUID_REQUEST_START || rx_frame[2] == LIQUID_REQUEST_STOP) &&
+        rx_frame[3] <= 250U && ui_initialized && !rx_fault &&
+        (!touch_sequence_valid || touch_sequence != rx_frame[3])) {
+      touch_sequence = rx_frame[3];
+      touch_sequence_valid = 1U;
+      touch_requests |= rx_frame[2];
+    }
     /* 只用完整的页面回复确认通信，启动通知和错误回复不能冒充成功。 */
     if (rx_length == 5U && rx_frame[0] == 0x66U &&
         state == HMI_REPLY_WAIT && rx_fault == 0U) {
@@ -140,8 +158,10 @@ void HMI_Screen_RxCpltCallback(void) {
       reply_code = rx_frame[0];
       reply_received = 1U;
     }
-    if (rx_length == 4U && rx_frame[0] == 0x88U && state != HMI_REPLY_WAIT)
-      restarted = 1U;
+    if (rx_length == 4U && rx_frame[0] == 0x88U) {
+      if (state != HMI_REPLY_WAIT) restarted = 1U;
+      ui_initialized = touch_requests = touch_sequence_valid = 0U;
+    }
     rx_length = rx_end_count = 0U;
   }
   if (HAL_UART_Receive_IT(&huart3, &rx_byte, 1U) != HAL_OK) rx_fault = 1U;
@@ -160,27 +180,29 @@ static void TakeSnapshot(void) {
   batch_sensor = CurrentSensorStatus();
   batch_pump = pump_enabled;
   batch_measurement = measurement_set;
+  batch_running = measurement_set && measurement_stage >= LIQUID_SUCTION &&
+                  measurement_stage <= LIQUID_TIMING;
   if (batch_measurement) {
     strcpy(batch_stage, measurement_stage == LIQUID_FAULT ?
         measurement_error_text[measurement_error] : measurement_stage_text[measurement_stage]);
     batch_stage_color = measurement_stage == LIQUID_FAULT ? 62826U :
                         measurement_stage == LIQUID_COMPLETE ? 15954U : 61343U;
     if (result_valid || measurement_stage == LIQUID_TIMING)
-      snprintf(batch_result, sizeof(batch_result), "%lu.%03lu s",
+      snprintf(batch_result, sizeof(batch_result), "%lu.%03lu",
                (unsigned long)(result_ms / 1000U), (unsigned long)(result_ms % 1000U));
-    else strcpy(batch_result, "--.--- s");
+    else strcpy(batch_result, "--.---");
   }
-  if (!batch_measurement) strcpy(batch_result, "--.--- s");
+  if (!batch_measurement) strcpy(batch_result, "--.---");
   batch_upper_wet = levels_set && upper_wet;
   batch_lower_wet = levels_set && lower_wet;
   if (levels_set) {
-    snprintf(batch_upper, sizeof(batch_upper), "%s %s", upper_wet ? "Wet" : "Dry",
-             upper_triggered ? "Started" : "Pending");
-    snprintf(batch_lower, sizeof(batch_lower), "%s %s", lower_wet ? "Wet" : "Dry",
-             lower_triggered ? "Finished" : "Pending");
+    snprintf(batch_upper, sizeof(batch_upper), "%s %s", upper_wet ? "WET" : "DRY",
+             upper_triggered ? "STARTED" : "WAIT");
+    snprintf(batch_lower, sizeof(batch_lower), "%s %s", lower_wet ? "WET" : "DRY",
+             lower_triggered ? "ENDED" : "WAIT");
   } else {
-    strcpy(batch_upper, "Waiting");
-    strcpy(batch_lower, "Waiting");
+    strcpy(batch_upper, "NO DATA");
+    strcpy(batch_lower, "NO DATA");
   }
   if (batch_sensor == 0U) {
     const int32_t absolute = temperature_centi < 0 ? -temperature_centi : temperature_centi;
@@ -197,12 +219,12 @@ static void TakeSnapshot(void) {
 
 static void SendUiCommand(void) {
   char command[80];
-  const char *running = batch_pump != 0U ? "On" : "Off";
+  const char *running = batch_pump != 0U ? "ON" : "OFF";
   switch (ui_index) {
     case 0: strcpy(command, "bkcmd=3"); break;
     case 1: snprintf(command, sizeof(command), "tTemp.txt=\"%s\"", batch_temperature); break;
     case 2: snprintf(command, sizeof(command), "tStage.txt=\"%s\"", batch_measurement ? batch_stage :
-        batch_pump != 0U ? "Pump running" : "Idle"); break;
+        batch_pump != 0U ? "SUCTION" : "NO DATA"); break;
     case 3: snprintf(command, sizeof(command), "tRun.txt=\"%s\"", running); break;
     case 4: snprintf(command, sizeof(command), "tUpper.txt=\"%s\"", batch_upper); break;
     case 5: snprintf(command, sizeof(command), "tLower.txt=\"%s\"", batch_lower); break;
@@ -213,8 +235,11 @@ static void SendUiCommand(void) {
     case 9: snprintf(command, sizeof(command), "tRun.pco=%u", batch_pump != 0U ? 16028U : 38167U); break;
     case 10: snprintf(command, sizeof(command), "tUpper.pco=%u", batch_upper_wet ? 15954U : 61343U); break;
     case 11: snprintf(command, sizeof(command), "tLower.pco=%u", batch_lower_wet ? 15954U : 61343U); break;
-    default: snprintf(command, sizeof(command), "tSensor.pco=%u",
+    case 12: snprintf(command, sizeof(command), "tSensor.pco=%u",
         batch_sensor == 0U ? 15954U : batch_sensor == 3U ? 38167U : 62826U); break;
+    case 13: snprintf(command, sizeof(command), "bAction.txt=\"%s\"", batch_running ? "STOP" : "START"); break;
+    case 14: snprintf(command, sizeof(command), "bAction.bco=%u", batch_running ? 59944U : 5385U); break;
+    default: snprintf(command, sizeof(command), "bAction.bco2=%u", batch_running ? 59944U : 5385U); break;
   }
   reply_received = 0U;
   state = HMI_UI_WAIT;
@@ -229,6 +254,7 @@ void HMI_Screen_Poll(void) {
                                   UART_CLEAR_FEF | UART_CLEAR_PEF);
     __HAL_UART_SEND_REQ(&huart3, UART_RXDATA_FLUSH_REQUEST);
     rx_length = rx_end_count = page_received = reply_received = 0U;
+    touch_requests &= LIQUID_REQUEST_STOP;
     rx_fault = 0U;
     if (HAL_UART_Receive_IT(&huart3, &rx_byte, 1U) != HAL_OK) rx_fault = 1U;
     Debug("HMI receive error; check wiring and baud rate.\r\n");
@@ -272,7 +298,7 @@ void HMI_Screen_Poll(void) {
     const uint8_t completed = reply_received;
     if (completed != 0U && reply_code == 1U) {
       state = HMI_UI_IDLE;
-      if (++ui_index == 13U) {
+      if (++ui_index == 16U) {
         batch_active = 0U;
         if (ui_initialized == 0U) Debug("HMI status UI ready.\r\n");
         ui_initialized = 1U;

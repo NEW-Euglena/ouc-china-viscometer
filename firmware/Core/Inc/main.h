@@ -71,6 +71,8 @@ void Error_Handler(void);
 #define PUMP_PWM2_GPIO_Port GPIOA
 #define VALVE_CONTROL_Pin GPIO_PIN_9
 #define VALVE_CONTROL_GPIO_Port GPIOA
+#define C_VENT_VALVE_Pin GPIO_PIN_7
+#define C_VENT_VALVE_GPIO_Port GPIOC
 #define TEMP_DATA_Pin GPIO_PIN_5
 #define TEMP_DATA_GPIO_Port GPIOB
 #define LIQUID_UPPER_Pin GPIO_PIN_10

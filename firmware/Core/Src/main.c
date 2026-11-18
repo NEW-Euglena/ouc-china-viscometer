@@ -87,6 +87,7 @@ static void LiquidControl_Init(void) {
       HAL_GPIO_ReadPin(LIQUID_UPPER_GPIO_Port, LIQUID_UPPER_Pin) == GPIO_PIN_RESET,
       HAL_GPIO_ReadPin(LIQUID_LOWER_GPIO_Port, LIQUID_LOWER_Pin) == GPIO_PIN_RESET,
       HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET);
+  PumpValve_SetRunning(liquid.pump);
   liquid_ready = 1U;
   if (!interrupt_state) __enable_irq();
   HMI_Screen_SetMeasurement(liquid.stage, liquid.error, liquid.result_valid, liquid.result_ms);
@@ -109,12 +110,12 @@ static void LiquidControl_Poll(void) {
   __disable_irq();
   const uint32_t now = HAL_GetTick();
   /* 先响应中止，避免按键恰好在完成时被解释为启动下一轮。 */
-  LiquidMeasurement_Button(&liquid,
-      HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET, now);
+  LiquidMeasurement_Control(&liquid,
+      HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET,
+      HMI_Screen_TakeRequests(), now);
   LiquidMeasurement_Poll(&liquid, now);
   /* 先落实泵阀状态，再进行串口、屏幕及网络处理。 */
-  HAL_GPIO_WritePin(GPIOA, PUMP_PWM2_Pin | VALVE_CONTROL_Pin,
-                    liquid.pump ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  PumpValve_SetRunning(liquid.pump);
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin,
                     liquid.pump ? GPIO_PIN_SET : GPIO_PIN_RESET);
   if (!interrupt_state) __enable_irq();
